@@ -7,14 +7,28 @@ import { charCode, CharCodes } from '../utils';
 export default class TimestampAddon extends TerminalAddon {
     public name = 'TimestampAddon';
 
-    public showTimestamps = true;
+    private _showTimestamps = true;
 
     public onActivate() {
         this.terminal.onData(data => {
-            if (this.showTimestamps && charCode(data) === CharCodes.LF) {
+            if (this._showTimestamps && charCode(data) === CharCodes.LF) {
                 this.writeTimestamp();
             }
         });
+    }
+
+    /**
+     * Whether or not timestamps will be shown on new commands.
+     */
+    public get showingTimestamps(): boolean {
+        return this._showTimestamps;
+    }
+
+    /**
+     * Toggles the printing of timestamps on or off.
+     */
+    public toggleTimestamps(): void {
+        this._showTimestamps = !this._showTimestamps;
     }
 
     private writeTimestamp(): void {

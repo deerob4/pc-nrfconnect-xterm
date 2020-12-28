@@ -141,11 +141,6 @@ export default class TerminalCommander implements ITerminalAddon {
         }
     }
 
-    private toggleTimestamps(): void {
-        const { showTimestamps } = this.timestampAddon;
-        this.timestampAddon.showTimestamps = !showTimestamps;
-    }
-
     private runCommand(): void {
         this.historyAddon.addToHistory(this.output);
 
@@ -155,7 +150,7 @@ export default class TerminalCommander implements ITerminalAddon {
                 break;
 
             case 'toggle_timestamps':
-                this.toggleTimestamps();
+                this.timestampAddon.toggleTimestamps()
                 break;
         }
 
