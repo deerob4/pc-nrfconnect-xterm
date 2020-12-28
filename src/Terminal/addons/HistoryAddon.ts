@@ -1,20 +1,13 @@
-import { Terminal, ITerminalAddon } from 'xterm';
-import TerminalCommander from './TerminalCommander';
-import { charCode, CharCodes } from './utils';
+import { charCode, CharCodes } from '../utils';
+import TerminalAddon from '../TerminalAddon';
 
-export default class HistoryAddon implements ITerminalAddon {
+export default class HistoryAddon extends TerminalAddon {
+    public name = 'TerminalAddon';
+
     private history: string[] = [];
     private currentIndex = -1;
-    private terminal!: Terminal;
-    private commander: TerminalCommander;
 
-    constructor(commander: TerminalCommander) {
-        this.commander = commander;
-    }
-
-    public activate(terminal: Terminal): void {
-        this.terminal = terminal;
-
+    public onActivate(): void {
         this.terminal.onData(data => {
             if (charCode(data) === CharCodes.LF) {
                 this.addToHistory(this.commander.output);
@@ -30,10 +23,6 @@ export default class HistoryAddon implements ITerminalAddon {
                     return this.moveForwards();
             }
         });
-    }
-
-    public dispose(): void {
-        this.history = [];
     }
 
     /**

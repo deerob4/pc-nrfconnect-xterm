@@ -32,6 +32,7 @@
     "@types/react-resize-detector": "^5.0.0",
     "ansi-colors": "^4.1.1",
     "ansi-escapes": "^4.3.1",
+    "date-fns": "^2.16.1",
     "modemtalk": "^1.2.0",
     "pc-nrfconnect-shared": "github:NordicSemiconductor/pc-nrfconnect-shared",
     "react": "^17.0.1",

@@ -1,5 +1,3 @@
-import { Terminal } from 'xterm';
-
 export function charCode(str: string): number {
     return str.charCodeAt(0);
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { XTerm } from 'xterm-for-react';
 import { FitAddon } from 'xterm-addon-fit';
