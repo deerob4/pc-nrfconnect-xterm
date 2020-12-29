@@ -2,6 +2,10 @@ import { Terminal, ITerminalAddon } from 'xterm';
 import { logger } from 'pc-nrfconnect-shared';
 import TerminalCommander from './TerminalCommander';
 
+/**
+ * Manages the lifecycle of a terminal extension, and provides
+ * access to the `xterm.js` and `TerminalCommander` instances.
+ */
 export default abstract class TerminalAddon implements ITerminalAddon {
     abstract name: string;
 
@@ -26,5 +30,12 @@ export default abstract class TerminalAddon implements ITerminalAddon {
         logger.debug(`[${this.name}] ${message}`);
     }
 
+    /**
+     * Called when the addon is first loaded into the `xterm.js`
+     * terminal instance.
+     *
+     * All the addon's setup code, i.e. registering event listeners,
+     * should take place here.
+     */
     protected abstract onActivate(): void;
 }
