@@ -4,7 +4,7 @@ import TerminalAddon from '../TerminalAddon';
 export default class HistoryAddon extends TerminalAddon {
     public name = 'HistoryAddon';
 
-    private history: string[] = [];
+    private _history: string[] = [];
     private currentIndex = -1;
 
     protected onActivate(): void {
@@ -27,7 +27,7 @@ export default class HistoryAddon extends TerminalAddon {
 
     private addToHistory(command: string): void {
         if (command.length && charCode(command) !== CharCodes.LF) {
-            this.history.unshift(command);
+            this._history.unshift(command);
         }
     }
 
@@ -35,13 +35,20 @@ export default class HistoryAddon extends TerminalAddon {
         if (this.currentIndex < 0) return;
         this.currentIndex -= 1;
         const command = this.currentIndex === -1 ? '' : this.currentCommand;
-        this.commander.replaceCommandWith(command);
+        this.commander.replaceInputWith(command);
     }
 
     private moveBackwards(): void {
         if (this.currentIndex >= this.history.length - 1) return;
         this.currentIndex += 1;
-        this.commander.replaceCommandWith(this.currentCommand);
+        this.commander.replaceInputWith(this.currentCommand);
+    }
+
+    /**
+     * A list of commands saved to the history list.
+     */
+    public get history() {
+        return this._history;
     }
 
     /**
@@ -63,7 +70,7 @@ export default class HistoryAddon extends TerminalAddon {
      * Removes all the commands saved into the history list.
      */
     public clearHistory(): void {
-        this.history = [];
+        this._history = [];
         this.currentIndex = -1;
     }
 }
