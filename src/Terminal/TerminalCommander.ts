@@ -1,4 +1,5 @@
 import { Terminal, ITerminalAddon } from 'xterm';
+import { CustomKeyEventHandler } from 'xterm/src/browser/Types';
 import * as ansi from 'ansi-escapes';
 
 import HistoryAddon from './addons/HistoryAddon';
@@ -31,6 +32,7 @@ export default class TerminalCommander implements ITerminalAddon {
     private _output = '';
     private _lineSpan = 0;
     private registeredCommands: { [command: string]: () => void } = {};
+    private keyEventHandlers: CustomKeyEventHandler[] = [];
 
     /**
      * The characters written at the beginning of each new line.
@@ -71,6 +73,11 @@ export default class TerminalCommander implements ITerminalAddon {
         this.registerCommand('clear_history', () => {
             historyAddon.clearHistory();
         });
+
+        this.terminal.attachCustomKeyEventHandler(e => {
+            this.keyEventHandlers.forEach(f => f(e));
+            return true;
+        });
     }
 
     public dispose() {
@@ -99,6 +106,10 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     private registerCommand(command: string, callback: () => void): void {
         this.registeredCommands[command] = callback;
+    }
+
+    public registerCustomKeyEventHandler(handler: CustomKeyEventHandler): void {
+        this.keyEventHandlers.push(handler);
     }
 
     /**
@@ -138,7 +149,6 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     public clearInput(): void {
         const charsToDelete = this.output.length - 1;
-        console.log(charsToDelete);
         for (let i = 0; i <= charsToDelete; i += 1) {
             this.backspace();
         }
@@ -164,9 +174,11 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private runCommand(): void {
-        const callback = this.registeredCommands[this.output];
-        if (callback) {
-            callback();
+        if (this.output.trim().length) {
+            const callback = this.registeredCommands[this.output];
+            if (callback) {
+                callback();
+            }
         }
 
         this.breakCurrentCommand();
@@ -197,8 +209,6 @@ export default class TerminalCommander implements ITerminalAddon {
         this._output += data;
         this.updateLineSpan();
 
-        console.log('Line span:', this.lineSpan);
-
         this.terminal.write(data);
     }
 
@@ -222,7 +232,6 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private updateLineSpan() {
-        console.log('Columns:', this.terminal.cols);
         const delta = this.terminal.cols - this.prompt.length;
         this._lineSpan = Math.floor(this.output.length / delta);
     }

@@ -55,18 +55,19 @@ const Terminal: React.FC<Props> = ({ width, height }) => {
         [port]
     );
 
-    useEffect(function toggleSearchBar() {
-        xtermRef.current?.terminal.attachCustomKeyEventHandler(event => {
-            if (event.metaKey && event.code === 'KeyF') {
-                searchBarAddon.show();
-            }
-            if (event.code === 'Escape') {
-                searchBarAddon.hidden();
-            }
+    // useEffect(function toggleSearchBar() {
+    //     xtermRef.current?.terminal.attachCustomKeyEventHandler(event => {
+    //         console.log(event);
+    //         if (event.metaKey && event.code === 'KeyF') {
+    //             searchBarAddon.show();
+    //         }
+    //         if (event.code === 'Escape') {
+    //             searchBarAddon.hidden();
+    //         }
 
-            return true;
-        });
-    }, []);
+    //         return true;
+    //     });
+    // }, []);
 
     return (
         <XTerm
