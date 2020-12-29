@@ -1,4 +1,5 @@
 import TerminalAddon from '../TerminalAddon';
+import { isMac } from '../utils';
 
 /**
  * Adds copy-paste functionality to the terminal, guaranteed
@@ -12,12 +13,30 @@ export default class CopyPasteAddon extends TerminalAddon {
     public name = 'CopyPasteAddon';
 
     protected onActivate() {
-        this.terminal.attachCustomKeyEventHandler(e => {
-            if (e.ctrlKey && e.key === 'c') {
+        this.commander.registerCustomKeyEventHandler(e => {
+            if (isCopy(e)) {
                 const copySucceeded = document.execCommand('copy');
                 console.log('Copy succeeded?', copySucceeded);
             }
-            return false;
+
+            if (isPaste(e)) {
+                console.log('thinking of pasting');
+            }
+
+            return true;
         });
     }
+}
+
+// On Windows and Linux Ctrl is used; on Mac, the cmd key.
+function isModifierKeyPressed(e: KeyboardEvent): boolean {
+    return isMac() ? e.metaKey : e.ctrlKey;
+}
+
+function isCopy(e: KeyboardEvent): boolean {
+    return isModifierKeyPressed(e) && e.code === 'KeyC';
+}
+
+function isPaste(e: KeyboardEvent): boolean {
+    return isModifierKeyPressed(e) && e.code === 'KeyV';
 }
