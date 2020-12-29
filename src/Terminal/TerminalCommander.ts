@@ -7,7 +7,7 @@ import TimestampAddon from './addons/TimestampAddon';
 import CopyPasteAddon from './addons/CopyPasteAddon';
 import AutocompleteAddon from './addons/AutocompleteAddon';
 
-import { charCode, CharCodes } from './utils';
+import { charCode, CharCodes, devReloadWindow, isMac } from './utils';
 
 export interface KeyEvent {
     key: string;
@@ -223,9 +223,12 @@ export default class TerminalCommander implements ITerminalAddon {
             }
 
             case 'KeyC': {
-                if (e.domEvent.ctrlKey) {
-                    this.breakCurrentCommand();
-                }
+                if (e.domEvent.ctrlKey) this.breakCurrentCommand();
+                break;
+            }
+
+            case 'KeyR': {
+                if (e.domEvent.ctrlKey && !isMac()) devReloadWindow();
                 break;
             }
         }

@@ -1,5 +1,7 @@
 import os from 'os';
 
+const { BrowserWindow } = require('electron').remote;
+
 export function charCode(str: string): number {
     return str.charCodeAt(0);
 }
@@ -10,6 +12,10 @@ export const CharCodes = {
     BACKSPACE: 127,
     ARROW_KEY: 27,
 };
+
+export function devReloadWindow(): void {
+    BrowserWindow.getFocusedWindow().reload();
+}
 
 export function isMac() {
     return os.platform() === 'darwin';
