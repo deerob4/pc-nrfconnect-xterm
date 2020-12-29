@@ -11,6 +11,7 @@ export const CharCodes = {
     LF: 13,
     BACKSPACE: 127,
     ARROW_KEY: 27,
+    CTRL_C: 3,
 };
 
 export function devReloadWindow(): void {

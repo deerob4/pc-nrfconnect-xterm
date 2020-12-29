@@ -196,14 +196,16 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private onData(data: string): void {
-        if (charCode(data) === CharCodes.ARROW_KEY) return;
+        switch (charCode(data)) {
+            case CharCodes.CTRL_C:
+            case CharCodes.ARROW_KEY:
+                return;
 
-        if (charCode(data) === CharCodes.BACKSPACE) {
-            return this.backspace();
-        }
+            case CharCodes.BACKSPACE:
+                return this.backspace();
 
-        if (charCode(data) === CharCodes.LF) {
-            return this.runCommand();
+            case CharCodes.LF:
+                return this.runCommand();
         }
 
         this._output += data;
@@ -223,7 +225,11 @@ export default class TerminalCommander implements ITerminalAddon {
             }
 
             case 'KeyC': {
-                if (e.domEvent.ctrlKey) this.breakCurrentCommand();
+                if (!e.domEvent.ctrlKey) break;
+                // On Windows and Linux, pressing Ctrl-C when text is selected
+                // should copy that text rather than breaking the line.
+                if (!isMac() && this.terminal.getSelection().length) break;
+                this.breakCurrentCommand();
                 break;
             }
 

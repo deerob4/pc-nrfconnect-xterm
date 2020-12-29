@@ -5,38 +5,32 @@ import { isMac } from '../utils';
  * Adds copy-paste functionality to the terminal, guaranteed
  * to work consistently across platforms.
  *
- * To copy, select the required text, and press Ctrl-Shift-C.
- *
- * Pasting occurs on Ctrl-Shift-V.
+ * The registered shortcuts are Ctrl-C for copy, and Ctrl-V
+ * for paste. On a Mac, the the addon is not initialised, since
+ * the required functionality works out of the box.
  */
 export default class CopyPasteAddon extends TerminalAddon {
     public name = 'CopyPasteAddon';
 
     protected onActivate() {
-        this.commander.registerCustomKeyEventHandler(e => {
-            if (isCopy(e)) {
-                const copySucceeded = document.execCommand('copy');
-                console.log('Copy succeeded?', copySucceeded);
+        if (isMac()) return;
+
+        this.terminal.onKey(async ({ domEvent }) => {
+            if (isCopy(domEvent)) {
+                document.execCommand('copy');
             }
 
-            if (isPaste(e)) {
-                console.log('thinking of pasting');
+            if (isPaste(domEvent)) {
+                document.execCommand('paste');
             }
-
-            return true;
         });
     }
 }
 
-// On Windows and Linux Ctrl is used; on Mac, the cmd key.
-function isModifierKeyPressed(e: KeyboardEvent): boolean {
-    return isMac() ? e.metaKey : e.ctrlKey;
-}
-
 function isCopy(e: KeyboardEvent): boolean {
-    return isModifierKeyPressed(e) && e.code === 'KeyC';
+    return e.ctrlKey && e.code === 'KeyC';
 }
 
 function isPaste(e: KeyboardEvent): boolean {
-    return isModifierKeyPressed(e) && e.code === 'KeyV';
+    return e.ctrlKey && e.code === 'KeyV';
 }
