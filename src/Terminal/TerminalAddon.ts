@@ -26,8 +26,8 @@ export default abstract class TerminalAddon implements ITerminalAddon {
         logger.debug(`Disposing of ${this.name}`);
     }
 
-    protected debug(message: string) {
-        logger.debug(`[${this.name}] ${message}`);
+    protected debug(message: string, ...meta: unknown[]) {
+        logger.debug(`[${this.name}] ${message}`, meta);
     }
 
     /**
