@@ -148,10 +148,19 @@ export default class TerminalCommander implements ITerminalAddon {
                 break;
 
             case 'toggle_timestamps':
-                this.timestampAddon.toggleTimestamps()
+                this.timestampAddon.toggleTimestamps();
                 break;
         }
 
+        this.breakCurrentCommand();
+    }
+
+    /**
+     * Prints a new prompt and removes the currently entered
+     * text. Useful whenever a new line of input needs to be
+     * started, i.e. because a command was just run.
+     */
+    private breakCurrentCommand() {
         this.terminal.write(this.prompt);
         this.historyAddon.resetCursor();
         this._output = '';
@@ -161,7 +170,7 @@ export default class TerminalCommander implements ITerminalAddon {
         if (charCode(data) === CharCodes.ARROW_KEY) return;
 
         if (charCode(data) === CharCodes.BACKSPACE) {
-            return this.backspace()
+            return this.backspace();
         }
 
         if (charCode(data) === CharCodes.LF) {
@@ -177,12 +186,21 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private onKey(e: KeyEvent): void {
-        switch (e.domEvent.key) {
-            case 'ArrowLeft':
+        switch (e.domEvent.code) {
+            case 'ArrowLeft': {
                 return this.moveCaretLeft();
+            }
 
-            case 'ArrowRight':
+            case 'ArrowRight': {
                 return this.moveCaretRight();
+            }
+
+            case 'KeyC': {
+                if (e.domEvent.ctrlKey) {
+                    this.breakCurrentCommand();
+                }
+                break;
+            }
         }
     }
 
