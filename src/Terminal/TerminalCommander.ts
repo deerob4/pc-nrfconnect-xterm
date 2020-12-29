@@ -1,5 +1,4 @@
 import { Terminal, ITerminalAddon } from 'xterm';
-import { CustomKeyEventHandler } from 'xterm/src/browser/Types';
 import * as ansi from 'ansi-escapes';
 
 import HistoryAddon from './addons/HistoryAddon';
@@ -32,7 +31,6 @@ export default class TerminalCommander implements ITerminalAddon {
     private _output = '';
     private _lineSpan = 0;
     private registeredCommands: { [command: string]: () => void } = {};
-    private keyEventHandlers: CustomKeyEventHandler[] = [];
 
     /**
      * The characters written at the beginning of each new line.
@@ -73,11 +71,6 @@ export default class TerminalCommander implements ITerminalAddon {
         this.registerCommand('clear_history', () => {
             historyAddon.clearHistory();
         });
-
-        this.terminal.attachCustomKeyEventHandler(e => {
-            this.keyEventHandlers.forEach(f => f(e));
-            return true;
-        });
     }
 
     public dispose() {
@@ -106,10 +99,6 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     private registerCommand(command: string, callback: () => void): void {
         this.registeredCommands[command] = callback;
-    }
-
-    public registerCustomKeyEventHandler(handler: CustomKeyEventHandler): void {
-        this.keyEventHandlers.push(handler);
     }
 
     /**
