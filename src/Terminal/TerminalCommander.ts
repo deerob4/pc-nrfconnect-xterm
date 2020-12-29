@@ -1,17 +1,21 @@
 import { Terminal, ITerminalAddon } from 'xterm';
 import * as ansi from 'ansi-escapes';
+import * as c from 'ansi-colors';
 
 import HistoryAddon from './addons/HistoryAddon';
 import TimestampAddon from './addons/TimestampAddon';
 import CopyPasteAddon from './addons/CopyPasteAddon';
 import AutocompleteAddon from './addons/AutocompleteAddon';
+import HoverAddon from './addons/HoverAddon';
 
-import { charCode, CharCodes } from './utils';
+import { charCode, CharCodes, devReloadWindow } from './utils';
 
 export interface KeyEvent {
     key: string;
     domEvent: KeyboardEvent;
 }
+
+export type OutputChangeListener = (output: string) => void;
 
 /**
  * Contains logic and control code for the most common terminal tasks,
@@ -26,10 +30,13 @@ export interface KeyEvent {
  */
 export default class TerminalCommander implements ITerminalAddon {
     private terminal!: Terminal;
+
+    private _output: string = '';
     private historyAddon!: HistoryAddon;
-    private timestampAddon!: TimestampAddon;
-    private _output = '';
+
     private _lineSpan = 0;
+    private registeredCommands: { [command: string]: () => void } = {};
+    private outputChangeListeners: OutputChangeListener[] = [];
 
     /**
      * The characters written at the beginning of each new line.
@@ -48,7 +55,6 @@ export default class TerminalCommander implements ITerminalAddon {
         this.terminal.loadAddon(historyAddon);
 
         const timestampAddon = new TimestampAddon(this);
-        this.timestampAddon = timestampAddon;
         this.terminal.loadAddon(timestampAddon);
 
         const copyPasteAddon = new CopyPasteAddon(this);
@@ -57,8 +63,23 @@ export default class TerminalCommander implements ITerminalAddon {
         const autocompleteAddon = new AutocompleteAddon(this, []);
         this.terminal.loadAddon(autocompleteAddon);
 
+        const hoverAddon = new HoverAddon(this);
+        this.terminal.loadAddon(hoverAddon);
+
         this.terminal.onKey(this.onKey.bind(this));
         this.terminal.onData(this.onData.bind(this));
+
+        this.registerCommand('toggle_timestamps', () => {
+            timestampAddon.toggleTimestamps();
+        });
+
+        this.registerCommand('show_history', () => {
+            console.log(historyAddon.history);
+        });
+
+        this.registerCommand('clear_history', () => {
+            historyAddon.clearHistory();
+        });
     }
 
     public dispose() {
@@ -69,7 +90,7 @@ export default class TerminalCommander implements ITerminalAddon {
      * The value of the current line.
      */
     public get output() {
-        return this._output;
+        return this._output || '';
     }
 
     /**
@@ -87,7 +108,7 @@ export default class TerminalCommander implements ITerminalAddon {
     public replaceCommandWith(newCommand: string): void {
         this.clearInput();
         this.terminal.write(newCommand);
-        this._output = newCommand;
+        this.setOutput(newCommand);
     }
 
     /**
@@ -116,16 +137,41 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     public clearInput(): void {
         const charsToDelete = this.output.length - 1;
-        console.log(charsToDelete);
         for (let i = 0; i <= charsToDelete; i += 1) {
             this.backspace();
         }
     }
 
+    /**
+     * Adds an event listener for when the output changes. This happens
+     * on more or less every keypress into the terminal, so `listener`
+     * should not be expensive.
+     *
+     * The advantage of using this method rather than the underlying
+     * terminal's `onData` or `onKey` callbacks is that the output is
+     * guaranteed to be the latest, whereas the other callbacks can
+     * result in a race condition when accessing the output.
+     *
+     * @param listener The callback function to call.
+     */
+    public onOutputChange(listener: OutputChangeListener): void {
+        this.outputChangeListeners.push(listener);
+    }
+
+    /**
+     * Registers the given `command` in the terminal, such that when it is
+     * executed `callback` is run.
+     * @param command The command to listen for.
+     * @param callback The function to run when the command is given.
+     */
+    private registerCommand(command: string, callback: () => void): void {
+        this.registeredCommands[command] = callback;
+    }
+
     private backspace(): void {
         if (!this.atBeginningOfLine()) {
             this.terminal.write('\b \b');
-            this._output = this.output.slice(0, this.output.length - 1);
+            this.setOutput(this.output.slice(0, this.output.length - 1));
         }
     }
 
@@ -142,52 +188,63 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private runCommand(): void {
-        this.historyAddon.addToHistory(this.output);
-
-        switch (this.output) {
-            case 'show_history':
-                console.log(this.historyAddon);
-                break;
-
-            case 'toggle_timestamps':
-                this.timestampAddon.toggleTimestamps()
-                break;
+        const callback = this.registeredCommands[this.output];
+        if (callback) {
+            callback();
         }
+        this.writeNewLine();
+    }
 
+    private writeNewLine(): void {
         this.terminal.write(this.prompt);
-        this.historyAddon.moveToFront();
-        this._output = '';
+        this.historyAddon.resetCursor();
+        this.setOutput('');
     }
 
     private onData(data: string): void {
         if (charCode(data) === CharCodes.ARROW_KEY) return;
-        if (charCode(data) === CharCodes.BACKSPACE) return;
 
+        if (charCode(data) === CharCodes.BACKSPACE) {
+            return this.backspace();
+        }
         if (charCode(data) === CharCodes.LF) {
-            return this.runCommand();
+            if (this.output.length) {
+                return this.runCommand();
+            }
         }
 
-        this._output += data;
+        this.setOutput(this.output + data);
         this.updateLineSpan();
-
-        console.log('Line span:', this.lineSpan);
 
         this.terminal.write(data);
     }
 
     private onKey(e: KeyEvent): void {
-        switch (e.domEvent.key) {
-            case 'ArrowLeft':
+        switch (e.domEvent.code) {
+            case 'ArrowLeft': {
                 return this.moveCaretLeft();
-
-            case 'ArrowRight':
+            }
+            case 'ArrowRight': {
                 return this.moveCaretRight();
+            }
+            case 'KeyC': {
+                if (e.domEvent.ctrlKey) this.writeNewLine();
+                break;
+            }
+            case 'KeyR': {
+                if (e.domEvent.ctrlKey) devReloadWindow();
+                break;
+            }
         }
     }
 
     private updateLineSpan() {
-        console.log('Columns:', this.terminal.cols);
         const delta = this.terminal.cols - this.prompt.length;
         this._lineSpan = Math.floor(this.output.length / delta);
+    }
+
+    private setOutput(newOutput: string) {
+        // this.outputChangeListeners.forEach(f => f(newOutput));
+        this._output = newOutput;
     }
 }

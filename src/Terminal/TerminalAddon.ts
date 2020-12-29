@@ -1,10 +1,16 @@
 import { Terminal, ITerminalAddon } from 'xterm';
-import { logger } from 'pc-nrfconnect-shared';
 import TerminalCommander from './TerminalCommander';
+import { logger } from 'pc-nrfconnect-shared';
 
 export default abstract class TerminalAddon implements ITerminalAddon {
-    abstract name: string;
+    /**
+     * The name of the addon, used in debug logs and similar.
+     */
+    public abstract name: string;
 
+    /**
+     * Instance of the `xterm.js` terminal the add-on is loaded into.
+     */
     protected terminal!: Terminal;
     protected commander: TerminalCommander;
 
@@ -12,8 +18,15 @@ export default abstract class TerminalAddon implements ITerminalAddon {
         this.commander = commander;
     }
 
+    /**
+     * Called when the addon is first activated by the underlying terminal.
+     *
+     * Use this to add event handlers and the like to the terminal instance.
+     */
+    protected abstract onActivate(): void;
+
     public activate(terminal: Terminal) {
-        logger.info(`Loading ${this.name}`);
+        logger.info(`Loaded ${this.name}`);
         this.terminal = terminal;
         this.onActivate();
     }
@@ -22,9 +35,7 @@ export default abstract class TerminalAddon implements ITerminalAddon {
         logger.debug(`Disposing of ${this.name}`);
     }
 
-    public debug(message: string) {
+    protected debug(message: string) {
         logger.debug(`[${this.name}] ${message}`);
     }
-
-    abstract onActivate(): void;
 }

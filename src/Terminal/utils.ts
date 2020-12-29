@@ -1,3 +1,9 @@
+const { BrowserWindow } = require('electron').remote;
+
+export function devReloadWindow(): void {
+    BrowserWindow.getFocusedWindow().reload();
+}
+
 export function charCode(str: string): number {
     return str.charCodeAt(0);
 }
