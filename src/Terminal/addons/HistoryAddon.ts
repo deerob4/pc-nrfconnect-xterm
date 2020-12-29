@@ -9,7 +9,10 @@ export default class HistoryAddon extends TerminalAddon {
 
     protected onActivate(): void {
         this.terminal.onData(data => {
-            if (charCode(data) === CharCodes.LF) {
+            if (
+                charCode(data) === CharCodes.LF &&
+                this.commander.output.trim().length
+            ) {
                 this.addToHistory(this.commander.output);
                 this.resetCursor();
             }
