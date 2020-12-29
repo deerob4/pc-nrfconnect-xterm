@@ -142,8 +142,6 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private runCommand(): void {
-        this.historyAddon.addToHistory(this.output);
-
         switch (this.output) {
             case 'show_history':
                 console.log(this.historyAddon);
@@ -155,13 +153,16 @@ export default class TerminalCommander implements ITerminalAddon {
         }
 
         this.terminal.write(this.prompt);
-        this.historyAddon.moveToFront();
+        this.historyAddon.resetCursor();
         this._output = '';
     }
 
     private onData(data: string): void {
         if (charCode(data) === CharCodes.ARROW_KEY) return;
-        if (charCode(data) === CharCodes.BACKSPACE) return;
+
+        if (charCode(data) === CharCodes.BACKSPACE) {
+            return this.backspace()
+        }
 
         if (charCode(data) === CharCodes.LF) {
             return this.runCommand();

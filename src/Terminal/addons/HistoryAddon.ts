@@ -11,7 +11,7 @@ export default class HistoryAddon extends TerminalAddon {
         this.terminal.onData(data => {
             if (charCode(data) === CharCodes.LF) {
                 this.addToHistory(this.commander.output);
-                this.moveToFront();
+                this.resetCursor();
             }
         });
 
@@ -25,30 +25,10 @@ export default class HistoryAddon extends TerminalAddon {
         });
     }
 
-    /**
-     * Adds `command` to the terminal buffer, allowing it to be
-     * retrieved using the arrow keys and search-function.
-     * @param command The command to add to the history buffer.
-     */
-    public addToHistory(command: string): void {
+    private addToHistory(command: string): void {
         if (command.length && charCode(command) !== CharCodes.LF) {
             this.history.unshift(command);
         }
-    }
-
-    /**
-     * Moves the position in the history to the front, so the last
-     * command to be saved will be the next one returned.
-     */
-    public moveToFront() {
-        this.currentIndex = -1;
-    }
-
-    /**
-     * The command at the current history position.
-     */
-    public get currentCommand(): string {
-        return this.history[this.currentIndex];
     }
 
     private moveForwards(): void {
@@ -62,5 +42,28 @@ export default class HistoryAddon extends TerminalAddon {
         if (this.currentIndex >= this.history.length - 1) return;
         this.currentIndex += 1;
         this.commander.replaceCommandWith(this.currentCommand);
+    }
+
+    /**
+     * The command at the current history position.
+     */
+    public get currentCommand(): string {
+        return this.history[this.currentIndex];
+    }
+
+    /**
+     * Moves the position in the history to the front, so the last
+     * command to be saved will be the next one returned.
+     */
+    public resetCursor(): void {
+        this.currentIndex = -1;
+    }
+
+    /**
+     * Removes all the commands saved into the history list.
+     */
+    public clearHistory(): void {
+        this.history = [];
+        this.currentIndex = -1;
     }
 }
