@@ -27,9 +27,10 @@ export interface KeyEvent {
 export default class TerminalCommander implements ITerminalAddon {
     private terminal!: Terminal;
     private historyAddon!: HistoryAddon;
-    private timestampAddon!: TimestampAddon;
+
     private _output = '';
     private _lineSpan = 0;
+    private registeredCommands: { [command: string]: () => void } = {};
 
     /**
      * The characters written at the beginning of each new line.
@@ -48,7 +49,6 @@ export default class TerminalCommander implements ITerminalAddon {
         this.terminal.loadAddon(historyAddon);
 
         const timestampAddon = new TimestampAddon(this);
-        this.timestampAddon = timestampAddon;
         this.terminal.loadAddon(timestampAddon);
 
         const copyPasteAddon = new CopyPasteAddon(this);
@@ -59,6 +59,18 @@ export default class TerminalCommander implements ITerminalAddon {
 
         this.terminal.onKey(this.onKey.bind(this));
         this.terminal.onData(this.onData.bind(this));
+
+        this.registerCommand('toggle_timestamps', () => {
+            timestampAddon.toggleTimestamps();
+        });
+
+        this.registerCommand('show_history', () => {
+            console.log(historyAddon.history);
+        });
+
+        this.registerCommand('clear_history', () => {
+            historyAddon.clearHistory();
+        });
     }
 
     public dispose() {
@@ -80,11 +92,21 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     /**
+     * Registers the given `command` in the terminal, such that when it is
+     * executed `callback` is run.
+     * @param command The command to listen for.
+     * @param callback The function to run when the command is given.
+     */
+    private registerCommand(command: string, callback: () => void): void {
+        this.registeredCommands[command] = callback;
+    }
+
+    /**
      * Removes the command currently being entered into the buffer
      * and replaces it with `newCommand`.
      * @param newCommand The command to write to the screen.
      */
-    public replaceCommandWith(newCommand: string): void {
+    public replaceInputWith(newCommand: string): void {
         this.clearInput();
         this.terminal.write(newCommand);
         this._output = newCommand;
@@ -142,14 +164,9 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private runCommand(): void {
-        switch (this.output) {
-            case 'show_history':
-                console.log(this.historyAddon);
-                break;
-
-            case 'toggle_timestamps':
-                this.timestampAddon.toggleTimestamps();
-                break;
+        const callback = this.registeredCommands[this.output];
+        if (callback) {
+            callback();
         }
 
         this.breakCurrentCommand();
