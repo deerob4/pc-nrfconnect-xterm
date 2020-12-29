@@ -13,7 +13,7 @@ export default abstract class TerminalAddon implements ITerminalAddon {
     }
 
     public activate(terminal: Terminal) {
-        logger.info(`Loading ${this.name}`);
+        logger.info(`Loaded ${this.name}`);
         this.terminal = terminal;
         this.onActivate();
     }
@@ -22,9 +22,9 @@ export default abstract class TerminalAddon implements ITerminalAddon {
         logger.debug(`Disposing of ${this.name}`);
     }
 
-    public debug(message: string) {
+    protected debug(message: string) {
         logger.debug(`[${this.name}] ${message}`);
     }
 
-    abstract onActivate(): void;
+    protected abstract onActivate(): void;
 }

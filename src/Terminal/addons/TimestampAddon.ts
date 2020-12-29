@@ -9,7 +9,7 @@ export default class TimestampAddon extends TerminalAddon {
 
     private _showTimestamps = true;
 
-    public onActivate() {
+    protected onActivate() {
         this.terminal.onData(data => {
             if (this._showTimestamps && charCode(data) === CharCodes.LF) {
                 this.writeTimestamp();

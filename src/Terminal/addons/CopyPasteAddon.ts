@@ -11,7 +11,7 @@ import TerminalAddon from '../TerminalAddon';
 export default class CopyPasteAddon extends TerminalAddon {
     public name = 'CopyPasteAddon';
 
-    public onActivate() {
+    protected onActivate() {
         this.terminal.attachCustomKeyEventHandler(e => {
             if (e.ctrlKey && e.key === 'c') {
                 const copySucceeded = document.execCommand('copy');

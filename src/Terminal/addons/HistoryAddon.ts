@@ -2,12 +2,12 @@ import { charCode, CharCodes } from '../utils';
 import TerminalAddon from '../TerminalAddon';
 
 export default class HistoryAddon extends TerminalAddon {
-    public name = 'TerminalAddon';
+    public name = 'HistoryAddon';
 
     private history: string[] = [];
     private currentIndex = -1;
 
-    public onActivate(): void {
+    protected onActivate(): void {
         this.terminal.onData(data => {
             if (charCode(data) === CharCodes.LF) {
                 this.addToHistory(this.commander.output);

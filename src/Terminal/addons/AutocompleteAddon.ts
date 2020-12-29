@@ -11,5 +11,5 @@ export default class AutocompleteAddon extends TerminalAddon {
         this.completions = completions;
     }
 
-    public onActivate() {}
+    protected onActivate() {}
 }
