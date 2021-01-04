@@ -6,6 +6,7 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import { SearchAddon } from 'xterm-addon-search';
 import { SearchBarAddon } from 'xterm-addon-search-bar';
 import { withResizeDetector } from 'react-resize-detector';
+import c from 'ansi-colors';
 
 import { State } from '../index';
 import TerminalCommander from './TerminalCommander';
@@ -19,7 +20,9 @@ interface Props {
     height: number;
 }
 
-const commander = new TerminalCommander('AT>');
+const commander = new TerminalCommander(
+    `${c.green('AT[')}${c.greenBright(':lineCount')}${c.green(']>')}`
+);
 
 const fitAddon = new FitAddon();
 const weblinksAddon = new WebLinksAddon();
@@ -85,6 +88,9 @@ const Terminal: React.FC<Props> = ({ width, height }) => {
                 theme: {
                     foreground: colours.gray50,
                     background: colours.gray900,
+                    green: colours.green,
+                    blue: colours.blueSlate,
+                    brightBlue: colours.nordicBlue,
                 },
             }}
         />

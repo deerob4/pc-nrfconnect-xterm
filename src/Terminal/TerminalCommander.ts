@@ -1,6 +1,7 @@
 import { Terminal, ITerminalAddon } from 'xterm';
 import * as ansi from 'ansi-escapes';
 
+import Prompt from './Prompt';
 import HistoryAddon from './addons/HistoryAddon';
 import TimestampAddon from './addons/TimestampAddon';
 import CopyPasteAddon from './addons/CopyPasteAddon';
@@ -30,20 +31,15 @@ export default class TerminalCommander implements ITerminalAddon {
     private terminal!: Terminal;
 
     private historyAddon!: HistoryAddon;
-    private autocompleteAddon!: AutocompleteAddon;
-
     private _outputValue = '';
     private _lineSpan = 0;
+    private _lineCount = 1;
     private registeredCommands: { [command: string]: () => void } = {};
     private outputListeners: ((output: string) => void)[] = [];
+    private prompt!: Prompt;
 
-    /**
-     * The characters written at the beginning of each new line.
-     */
-    public readonly prompt: string;
-
-    constructor(prompt: string) {
-        this.prompt = `\n\r${prompt} `;
+    constructor(promptTemplate: string) {
+        this.prompt = new Prompt(this, promptTemplate);
     }
 
     public activate(terminal: Terminal) {
@@ -101,6 +97,10 @@ export default class TerminalCommander implements ITerminalAddon {
         return this._lineSpan;
     }
 
+    public get lineCount() {
+        return this._lineCount;
+    }
+
     /**
      * Registers the given `command` in the terminal, such that when it is
      * executed `callback` is run.
@@ -147,6 +147,7 @@ export default class TerminalCommander implements ITerminalAddon {
      * otherwise `false`.
      */
     public atEndOfLine(): boolean {
+        console.log(this.prompt.length);
         const maxRightCursor = this.prompt.length - 2 + this.output.length;
         const buffer = this.terminal.buffer.active;
         return buffer.cursorX >= maxRightCursor;
@@ -199,9 +200,10 @@ export default class TerminalCommander implements ITerminalAddon {
      * started, i.e. because a command was just run.
      */
     private breakCurrentCommand() {
-        this.terminal.write(this.prompt);
+        this.terminal.write(this.prompt.value);
         this.historyAddon.resetCursor();
         this._output = '';
+        this._lineCount += 1;
     }
 
     private onData(data: string): void {
