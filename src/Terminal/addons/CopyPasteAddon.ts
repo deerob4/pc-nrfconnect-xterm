@@ -2,15 +2,15 @@ import TerminalAddon from '../TerminalAddon';
 import { isMac } from '../utils';
 
 /**
- * Adds copy-paste functionality to the terminal, guaranteed
- * to work consistently across platforms.
+ * Adds copy-paste functionality to the terminal, guaranteed to work
+ * consistently across platforms. On a Mac, the addon is not
+ * initialised, since the required functionality works out of the box.
  *
- * The registered shortcuts are Ctrl-C for copy, and Ctrl-V
- * for paste. On a Mac, the the addon is not initialised, since
- * the required functionality works out of the box.
+ * The registered shortcuts on Windows and Linux are Ctrl-C for copy,
+ * and Ctrl-V for paste. On a Mac, the Cmd key replaces the Ctrl key.
  */
 export default class CopyPasteAddon extends TerminalAddon {
-    public name = 'CopyPasteAddon';
+    name = 'CopyPasteAddon';
 
     protected onActivate() {
         if (isMac()) return;

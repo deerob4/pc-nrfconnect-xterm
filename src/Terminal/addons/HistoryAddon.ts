@@ -2,10 +2,10 @@ import { charCode, CharCodes } from '../utils';
 import TerminalAddon from '../TerminalAddon';
 
 export default class HistoryAddon extends TerminalAddon {
-    public name = 'HistoryAddon';
+    name = 'HistoryAddon';
 
-    private _history: string[] = [];
-    private currentIndex = -1;
+    #history: string[] = [];
+    #currentIndex = -1;
 
     protected onActivate(): void {
         this.terminal.onData(data => {
@@ -30,20 +30,20 @@ export default class HistoryAddon extends TerminalAddon {
 
     private addToHistory(command: string): void {
         if (command.length && charCode(command) !== CharCodes.LF) {
-            this._history.unshift(command);
+            this.#history.unshift(command);
         }
     }
 
     private moveForwards(): void {
-        if (this.currentIndex < 0) return;
-        this.currentIndex -= 1;
-        const command = this.currentIndex === -1 ? '' : this.currentCommand;
+        if (this.#currentIndex < 0) return;
+        this.#currentIndex -= 1;
+        const command = this.#currentIndex === -1 ? '' : this.currentCommand;
         this.commander.replaceInputWith(command);
     }
 
     private moveBackwards(): void {
-        if (this.currentIndex >= this.history.length - 1) return;
-        this.currentIndex += 1;
+        if (this.#currentIndex >= this.history.length - 1) return;
+        this.#currentIndex += 1;
         this.commander.replaceInputWith(this.currentCommand);
     }
 
@@ -51,14 +51,14 @@ export default class HistoryAddon extends TerminalAddon {
      * A list of commands saved to the history list.
      */
     public get history() {
-        return this._history;
+        return this.#history;
     }
 
     /**
      * The command at the current history position.
      */
     public get currentCommand(): string {
-        return this.history[this.currentIndex];
+        return this.history[this.#currentIndex];
     }
 
     /**
@@ -66,14 +66,14 @@ export default class HistoryAddon extends TerminalAddon {
      * command to be saved will be the next one returned.
      */
     public resetCursor(): void {
-        this.currentIndex = -1;
+        this.#currentIndex = -1;
     }
 
     /**
      * Removes all the commands saved into the history list.
      */
     public clearHistory(): void {
-        this._history = [];
-        this.currentIndex = -1;
+        this.#history = [];
+        this.#currentIndex = -1;
     }
 }

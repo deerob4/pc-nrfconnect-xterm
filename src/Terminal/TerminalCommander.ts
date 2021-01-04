@@ -5,7 +5,9 @@ import Prompt from './Prompt';
 import HistoryAddon from './addons/HistoryAddon';
 import TimestampAddon from './addons/TimestampAddon';
 import CopyPasteAddon from './addons/CopyPasteAddon';
-import AutocompleteAddon from './addons/AutocompleteAddon/AutocompleteAddon';
+import AutocompleteAddon, {
+    Completion,
+} from './addons/AutocompleteAddon/AutocompleteAddon';
 
 import { charCode, CharCodes, devReloadWindow, isMac } from './utils';
 
@@ -28,38 +30,39 @@ export type OutputListener = (output: string) => void;
  * addon tree.
  */
 export default class TerminalCommander implements ITerminalAddon {
-    private terminal!: Terminal;
+    #terminal!: Terminal;
+    #prompt: Prompt;
+    #historyAddon!: HistoryAddon;
 
-    private historyAddon!: HistoryAddon;
-    private _outputValue = '';
-    private _lineSpan = 0;
-    private _lineCount = 1;
-    private registeredCommands: { [command: string]: () => void } = {};
-    private outputListeners: ((output: string) => void)[] = [];
-    private prompt!: Prompt;
+    #lineSpan = 0;
+    #lineCount = 1;
+    #outputValue = '';
+
+    #registeredCommands: { [command: string]: () => void } = {};
+    #outputListeners: ((output: string) => void)[] = [];
 
     constructor(promptTemplate: string) {
-        this.prompt = new Prompt(this, promptTemplate);
+        this.#prompt = new Prompt(this, promptTemplate);
     }
 
     public activate(terminal: Terminal) {
-        this.terminal = terminal;
+        this.#terminal = terminal;
 
         const historyAddon = new HistoryAddon(this);
-        this.historyAddon = historyAddon;
-        this.terminal.loadAddon(historyAddon);
+        this.#historyAddon = historyAddon;
+        this.#terminal.loadAddon(historyAddon);
 
         const timestampAddon = new TimestampAddon(this);
-        this.terminal.loadAddon(timestampAddon);
+        this.#terminal.loadAddon(timestampAddon);
 
         const copyPasteAddon = new CopyPasteAddon(this);
-        this.terminal.loadAddon(copyPasteAddon);
+        this.#terminal.loadAddon(copyPasteAddon);
 
         const autocompleteAddon = new AutocompleteAddon(this, []);
-        this.terminal.loadAddon(autocompleteAddon);
+        this.#terminal.loadAddon(autocompleteAddon);
 
-        this.terminal.onKey(this.onKey.bind(this));
-        this.terminal.onData(this.onData.bind(this));
+        this.#terminal.onKey(this.onKey.bind(this));
+        this.#terminal.onData(this.onData.bind(this));
 
         this.registerCommand('toggle_timestamps', () => {
             timestampAddon.toggleTimestamps();
@@ -82,23 +85,27 @@ export default class TerminalCommander implements ITerminalAddon {
      * The value of the current line.
      */
     public get output() {
-        return this._outputValue;
+        return this.#outputValue;
     }
 
     private set _output(newOutput: string) {
-        this._outputValue = newOutput;
-        this.outputListeners.forEach(l => l(this.output));
+        this.#outputValue = newOutput;
+        this.#outputListeners.forEach(l => l(this.output));
     }
 
     /**
      * The number of lines spanned by the current command.
      */
     public get lineSpan() {
-        return this._lineSpan;
+        return this.#lineSpan;
     }
 
     public get lineCount() {
-        return this._lineCount;
+        return this.#lineCount;
+    }
+
+    public get prompt() {
+        return this.#prompt;
     }
 
     /**
@@ -108,7 +115,7 @@ export default class TerminalCommander implements ITerminalAddon {
      * @param callback The function to run when the command is given.
      */
     private registerCommand(command: string, callback: () => void): void {
-        this.registeredCommands[command] = callback;
+        this.#registeredCommands[command] = callback;
     }
 
     /**
@@ -118,7 +125,7 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     public registerOutputListener(listener: (output: string) => void): void {
         console.log(this);
-        this.outputListeners.push(listener);
+        this.#outputListeners.push(listener);
     }
 
     /**
@@ -128,7 +135,7 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     public replaceInputWith(newCommand: string): void {
         this.clearInput();
-        this.terminal.write(newCommand);
+        this.#terminal.write(newCommand);
         this._output = newCommand;
     }
 
@@ -137,8 +144,8 @@ export default class TerminalCommander implements ITerminalAddon {
      * the line (i.e. right after the prompt), otherwise `false`.
      */
     public atBeginningOfLine(): boolean {
-        const buffer = this.terminal.buffer.active;
-        return buffer.cursorX <= this.prompt.length - 2;
+        const buffer = this.#terminal.buffer.active;
+        return buffer.cursorX <= this.#prompt.length - 2;
     }
 
     /**
@@ -147,9 +154,9 @@ export default class TerminalCommander implements ITerminalAddon {
      * otherwise `false`.
      */
     public atEndOfLine(): boolean {
-        console.log(this.prompt.length);
-        const maxRightCursor = this.prompt.length - 2 + this.output.length;
-        const buffer = this.terminal.buffer.active;
+        console.log(this.#prompt.length);
+        const maxRightCursor = this.#prompt.length - 2 + this.output.length;
+        const buffer = this.#terminal.buffer.active;
         return buffer.cursorX >= maxRightCursor;
     }
 
@@ -166,26 +173,26 @@ export default class TerminalCommander implements ITerminalAddon {
 
     private backspace(): void {
         if (!this.atBeginningOfLine()) {
-            this.terminal.write('\b \b');
+            this.#terminal.write('\b \b');
             this._output = this.output.slice(0, this.output.length - 1);
         }
     }
 
     private moveCaretLeft(): void {
         if (!this.atBeginningOfLine()) {
-            this.terminal.write(ansi.cursorBackward(1));
+            this.#terminal.write(ansi.cursorBackward(1));
         }
     }
 
     private moveCaretRight(): void {
         if (!this.atEndOfLine()) {
-            this.terminal.write(ansi.cursorForward(1));
+            this.#terminal.write(ansi.cursorForward(1));
         }
     }
 
     private runCommand(): void {
         if (this.output.trim().length) {
-            const callback = this.registeredCommands[this.output];
+            const callback = this.#registeredCommands[this.output];
             if (callback) {
                 callback();
             }
@@ -200,10 +207,11 @@ export default class TerminalCommander implements ITerminalAddon {
      * started, i.e. because a command was just run.
      */
     private breakCurrentCommand() {
-        this.terminal.write(this.prompt.value);
-        this.historyAddon.resetCursor();
+        console.log('breaking current command');
+        this.#terminal.write(this.#prompt.value);
+        this.#historyAddon.resetCursor();
         this._output = '';
-        this._lineCount += 1;
+        this.#lineCount += 1;
     }
 
     private onData(data: string): void {
@@ -222,7 +230,7 @@ export default class TerminalCommander implements ITerminalAddon {
         this._output = this.output + data;
         this.updateLineSpan();
 
-        this.terminal.write(data);
+        this.#terminal.write(data);
     }
 
     private onKey(e: KeyEvent): void {
@@ -239,7 +247,7 @@ export default class TerminalCommander implements ITerminalAddon {
                 if (!e.domEvent.ctrlKey) break;
                 // On Windows and Linux, pressing Ctrl-C when text is selected
                 // should copy that text rather than breaking the line.
-                if (!isMac() && this.terminal.getSelection().length) break;
+                if (!isMac() && this.#terminal.getSelection().length) break;
                 this.breakCurrentCommand();
                 break;
             }
@@ -252,7 +260,7 @@ export default class TerminalCommander implements ITerminalAddon {
     }
 
     private updateLineSpan() {
-        const delta = this.terminal.cols - this.prompt.length;
-        this._lineSpan = Math.floor(this.output.length / delta);
+        const delta = this.#terminal.cols - this.#prompt.length;
+        this.#lineSpan = Math.floor(this.output.length / delta);
     }
 }

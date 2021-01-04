@@ -19,14 +19,14 @@ import TerminalCommander from '../TerminalCommander';
  * this addon.
  */
 export default class TimestampAddon extends TerminalAddon {
-    public name = 'TimestampAddon';
+    name = 'TimestampAddon';
+
+    #showTimestamps = true;
 
     /**
      * The `date-fns` compatible formatter used to format the timestamp.
      */
-    public format: string;
-
-    private _showTimestamps = true;
+    format: string;
 
     constructor(commander: TerminalCommander, format?: string) {
         super(commander);
@@ -59,13 +59,13 @@ export default class TimestampAddon extends TerminalAddon {
      * Whether or not timestamps will be shown on new commands.
      */
     public get showingTimestamps(): boolean {
-        return this._showTimestamps;
+        return this.#showTimestamps;
     }
 
     /**
      * Toggles the printing of timestamps on or off.
      */
     public toggleTimestamps(): void {
-        this._showTimestamps = !this.showingTimestamps;
+        this.#showTimestamps = !this.showingTimestamps;
     }
 }
