@@ -4,7 +4,7 @@ import * as ansi from 'ansi-escapes';
 import HistoryAddon from './addons/HistoryAddon';
 import TimestampAddon from './addons/TimestampAddon';
 import CopyPasteAddon from './addons/CopyPasteAddon';
-import AutocompleteAddon from './addons/AutocompleteAddon';
+import AutocompleteAddon from './addons/AutocompleteAddon/AutocompleteAddon';
 
 import { charCode, CharCodes, devReloadWindow, isMac } from './utils';
 
@@ -12,6 +12,8 @@ export interface KeyEvent {
     key: string;
     domEvent: KeyboardEvent;
 }
+
+export type OutputListener = (output: string) => void;
 
 /**
  * Contains logic and control code for the most common terminal tasks,
@@ -26,11 +28,14 @@ export interface KeyEvent {
  */
 export default class TerminalCommander implements ITerminalAddon {
     private terminal!: Terminal;
-    private historyAddon!: HistoryAddon;
 
-    private _output = '';
+    private historyAddon!: HistoryAddon;
+    private autocompleteAddon!: AutocompleteAddon;
+
+    private _outputValue = '';
     private _lineSpan = 0;
     private registeredCommands: { [command: string]: () => void } = {};
+    private outputListeners: ((output: string) => void)[] = [];
 
     /**
      * The characters written at the beginning of each new line.
@@ -81,7 +86,12 @@ export default class TerminalCommander implements ITerminalAddon {
      * The value of the current line.
      */
     public get output() {
-        return this._output;
+        return this._outputValue;
+    }
+
+    private set _output(newOutput: string) {
+        this._outputValue = newOutput;
+        this.outputListeners.forEach(l => l(this.output));
     }
 
     /**
@@ -99,6 +109,16 @@ export default class TerminalCommander implements ITerminalAddon {
      */
     private registerCommand(command: string, callback: () => void): void {
         this.registeredCommands[command] = callback;
+    }
+
+    /**
+     * Registers a function that will be called whenever the output changes,
+     * with the new output value.
+     * @param listener The function to call when the output changes.
+     */
+    public registerOutputListener(listener: (output: string) => void): void {
+        console.log(this);
+        this.outputListeners.push(listener);
     }
 
     /**
@@ -197,7 +217,7 @@ export default class TerminalCommander implements ITerminalAddon {
                 return this.runCommand();
         }
 
-        this._output += data;
+        this._output = this.output + data;
         this.updateLineSpan();
 
         this.terminal.write(data);
