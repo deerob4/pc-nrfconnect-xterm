@@ -32,6 +32,7 @@ export function isLinux() {
 }
 
 export function stripAnsiCodes(str: string): string {
+    // eslint-disable-next-line
     const regex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
     return str.replace(regex, '');
 }

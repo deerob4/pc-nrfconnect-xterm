@@ -5,9 +5,7 @@ import Prompt from './Prompt';
 import HistoryAddon from './addons/HistoryAddon';
 import TimestampAddon from './addons/TimestampAddon';
 import CopyPasteAddon from './addons/CopyPasteAddon';
-import AutocompleteAddon, {
-    Completion,
-} from './addons/AutocompleteAddon/AutocompleteAddon';
+import AutocompleteAddon, { Completion } from './addons/AutocompleteAddon';
 
 import { charCode, CharCodes, devReloadWindow, isMac } from './utils';
 
@@ -17,6 +15,22 @@ export interface KeyEvent {
 }
 
 export type OutputListener = (output: string) => void;
+
+const completions: Completion[] = [
+    {
+        value: 'toggle_history',
+        description: 'Toggles history on and off',
+    },
+    {
+        value: 'toggle_timestamps',
+        description: 'Toggles the line numbers on and off',
+    },
+    {
+        value: '+CGEREP',
+        description:
+            'The `+CGEREP` command enables or disables the sending of packet domain events.',
+    },
+];
 
 /**
  * Contains logic and control code for the most common terminal tasks,
@@ -33,6 +47,7 @@ export default class TerminalCommander implements ITerminalAddon {
     #terminal!: Terminal;
     #prompt: Prompt;
     #historyAddon!: HistoryAddon;
+    autocompleteAddon!: AutocompleteAddon;
 
     #lineSpan = 0;
     #lineCount = 1;
@@ -58,8 +73,9 @@ export default class TerminalCommander implements ITerminalAddon {
         const copyPasteAddon = new CopyPasteAddon(this);
         this.#terminal.loadAddon(copyPasteAddon);
 
-        const autocompleteAddon = new AutocompleteAddon(this, []);
+        const autocompleteAddon = new AutocompleteAddon(this, completions);
         this.#terminal.loadAddon(autocompleteAddon);
+        this.autocompleteAddon = autocompleteAddon;
 
         this.#terminal.onKey(this.onKey.bind(this));
         this.#terminal.onData(this.onData.bind(this));
@@ -124,7 +140,6 @@ export default class TerminalCommander implements ITerminalAddon {
      * @param listener The function to call when the output changes.
      */
     public registerOutputListener(listener: (output: string) => void): void {
-        console.log(this);
         this.#outputListeners.push(listener);
     }
 
@@ -154,7 +169,6 @@ export default class TerminalCommander implements ITerminalAddon {
      * otherwise `false`.
      */
     public atEndOfLine(): boolean {
-        console.log(this.#prompt.length);
         const maxRightCursor = this.#prompt.length - 2 + this.output.length;
         const buffer = this.#terminal.buffer.active;
         return buffer.cursorX >= maxRightCursor;
@@ -207,7 +221,6 @@ export default class TerminalCommander implements ITerminalAddon {
      * started, i.e. because a command was just run.
      */
     private breakCurrentCommand() {
-        console.log('breaking current command');
         this.#terminal.write(this.#prompt.value);
         this.#historyAddon.resetCursor();
         this._output = '';
@@ -224,12 +237,15 @@ export default class TerminalCommander implements ITerminalAddon {
                 return this.backspace();
 
             case CharCodes.LF:
-                return this.runCommand();
+                console.log(this.autocompleteAddon.isVisible);
+                if (!this.autocompleteAddon.isVisible) {
+                    return this.runCommand();
+                }
         }
 
         this._output = this.output + data;
         this.updateLineSpan();
-
+        this.autocompleteAddon.enable();
         this.#terminal.write(data);
     }
 

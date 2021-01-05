@@ -19,11 +19,15 @@ export default class HistoryAddon extends TerminalAddon {
         });
 
         this.terminal.onKey(e => {
-            switch (e.domEvent.key) {
-                case 'ArrowUp':
-                    return this.moveBackwards();
-                case 'ArrowDown':
-                    return this.moveForwards();
+            if (!this.commander.autocompleteAddon.isVisible) {
+                // Don't show the autocomplete dialog when travelling through time.
+                this.commander.autocompleteAddon.disable();
+                switch (e.domEvent.key) {
+                    case 'ArrowUp':
+                        return this.moveBackwards();
+                    case 'ArrowDown':
+                        return this.moveForwards();
+                }
             }
         });
     }
