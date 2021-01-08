@@ -8,6 +8,7 @@ import CopyPasteAddon from './addons/CopyPasteAddon';
 import AutocompleteAddon, { Completion } from './addons/AutocompleteAddon';
 
 import { charCode, CharCodes, devReloadWindow, isMac } from './utils';
+import HoverAddon, { HoverMetadata } from './addons/HoverAddon';
 
 export interface KeyEvent {
     key: string;
@@ -31,6 +32,13 @@ const completions: Completion[] = [
             'The `+CGEREP` command enables or disables the sending of packet domain events.',
     },
 ];
+
+interface NrfTerminalConfig {
+    prompt: string;
+    completions: Completion[];
+    commands: { [name: string]: () => void };
+    hoverMetadata: HoverMetadata[];
+}
 
 /**
  * Contains logic and control code for the most common terminal tasks,
@@ -76,6 +84,9 @@ export default class TerminalCommander implements ITerminalAddon {
         const autocompleteAddon = new AutocompleteAddon(this, completions);
         this.#terminal.loadAddon(autocompleteAddon);
         this.autocompleteAddon = autocompleteAddon;
+
+        const hoverAddon = new HoverAddon(this, []);
+        this.#terminal.loadAddon(hoverAddon);
 
         this.#terminal.onKey(this.onKey.bind(this));
         this.#terminal.onData(this.onData.bind(this));
@@ -237,7 +248,6 @@ export default class TerminalCommander implements ITerminalAddon {
                 return this.backspace();
 
             case CharCodes.LF:
-                console.log(this.autocompleteAddon.isVisible);
                 if (!this.autocompleteAddon.isVisible) {
                     return this.runCommand();
                 }
